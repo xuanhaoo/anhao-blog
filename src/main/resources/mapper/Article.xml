@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.blog.dao.ArticleDao">
+
+
+    <!--构建ArticleMapBasic返回模型(列表)-->
+    <resultMap id="ArticleMapBasic" type="com.blog.model.Article">
+        <id column="id" property="id"></id>
+        <result property="title" column="title"></result>
+        <result property="summary" column="summary"></result>
+        <result property="commentCounts" column="comment_counts"></result>
+        <result property="viewCounts" column="view_counts"></result>
+        <result property="weight" column="weight"></result>
+        <result property="allowComment" column="allow_comment"></result>
+        <result property="status" column="status"></result>
+        <result property="createDate" column="create_date"></result>
+
+        <association property="category" javaType="com.blog.model.Category">
+            <id property="id" column="c_id"></id>
+            <result property="categoryName" column="category_name"></result>
+        </association>
+
+        <association property="nickname" javaType="String">
+            <result property="nickname" column="nickname"></result>
+        </association>
+    </resultMap>
+
+    <!--构建单个文章返回模型-->
+    <resultMap id="ArticleObjectMap" type="com.blog.model.Article">
+        <id column="id" property="id"></id>
+        <result property="title" column="title"></result>
+        <result property="summary" column="summary"></result>
+        <result property="commentCounts" column="comment_counts"></result>
+        <result property="viewCounts" column="view_counts"></result>
+        <result property="weight" column="weight"></result>
+        <result property="allowComment" column="allow_comment"></result>
+        <result property="status" column="status"></result>
+        <result property="createDate" column="create_date"></result>
+
+        <association property="category" javaType="com.blog.model.Category">
+            <id property="id" column="c_id"></id>
+            <result property="categoryName" column="category_name"></result>
+        </association>
+        <association property="articleBody" javaType="com.blog.model.ArticleBody">
+            <id property="id" column="a_id"></id>
+            <result property="content" column="content"></result>
+            <result property="contentHtml" column="content_html"></result>
+        </association>
+        <association property="nickname" javaType="String">
+            <result property="nickname" column="nickname"></result>
+        </association>
+    </resultMap>
+
+    <!--归档类文章返回-->
+    <resultMap id="ArchivingArticle" type="com.blog.modelVo.ArchivingVo">
+        <result property="artYear" column="artYear"></result>
+        <!--此时是一对多-->
+        <collection property="articles" ofType="com.blog.model.Article">
+            <id property="id" column="a_id"></id>
+            <result property="title" column="a_title"></result>
+            <result property="createDate" column="a_create_date"></result>
+        </collection>
+    </resultMap>
+
+
+    <!--查询列表(back)-->
+    <select id="queryList" resultMap="ArticleMapBasic">
+        SELECT t1.id,t1.title,t1.summary,t1.comment_counts,t1.view_counts,t1.weight,t1.allow_comment,t1.status,t1.create_date,t2.id c_id,t2.category_name,
+        t3.nickname
+        FROM anhao_article t1
+        LEFT JOIN anhao_category t2 ON t1.category_id = t2.id
+        LEFT JOIN anhao_sys_user t3 ON t1.author_id = t3.id
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+    </select>
+    <!--查询单个(back)-->
+    <select id="queryObject" resultMap="ArticleObjectMap">
+        SELECT t1.id,t1.title,t1.summary,t1.comment_counts,t1.view_counts,t1.weight,t1.allow_comment,t1.status,t1.create_date,t2.id c_id,t2.category_name,
+        t3.nickname,t4.id a_id,t4.content,t4.content_html
+        FROM anhao_article t1
+        LEFT JOIN anhao_category t2 ON t1.category_id = t2.id
+        LEFT JOIN anhao_sys_user t3 ON t1.author_id = t3.id
+        LEFT JOIN anhao_article_body t4 ON t1.body_id = t4.id
+        WHERE t1.id = #{id}
+    </select>
+
+
+
+    <!--查询文章（front）-->
+    <select id="frontQueryList" resultMap="ArticleMapBasic">
+        SELECT t1.id,t1.title,t1.summary,t1.comment_counts,t1.view_counts,t1.weight,t1.allow_comment,t1.status,t1.create_date,t2.id c_id,t2.category_name,
+        t3.nickname
+        FROM anhao_article t1
+        LEFT JOIN anhao_category t2 ON t1.category_id = t2.id
+        LEFT JOIN anhao_sys_user t3 ON t1.author_id = t3.id
+        <if test="offset != null and limit != null">
+            limit #{offset}, #{limit}
+        </if>
+        <where>
+            <if test="categoryId != 0">
+                AND t1.`category_id` = #{categoryId}
+            </if>
+                AND t1.`status` = 1
+        </where>
+    </select>
+
+    <!--查询文章总数（back）-->
+    <select id="queryTotal" resultType="int">
+        SELECT count(*) FROM anhao_article
+    </select>
+
+    <!--查询文章总数（front）-->
+    <select id="frontQueryTotal" resultType="int">
+        SELECT count(*) FROM anhao_article
+        <where>
+            <if test="categoryId != 0">
+                AND `category_id` = #{categoryId}
+            </if>
+                AND `status` = 1
+        </where>
+    </select>
+
+
+    <!--保存文章body内容，返回生成的主键id-->
+    <insert id="insertArticleBody" parameterType="com.blog.model.ArticleBody" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO anhao_article_body
+        (
+          `content`,
+          `content_html`
+        )
+        VALUES
+        (
+          #{content},
+          #{contentHtml}
+        )
+    </insert>
+
+    <insert id="saveArticle" parameterType="com.blog.model.Article" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO anhao_article
+        (
+          `comment_counts`,
+          `create_date`,
+          `summary`,
+          `title`,
+          `view_counts`,
+          `weight`,
+          `author_id`,
+          `allow_comment`,
+          `body_id`,
+          `category_id`,
+          `status`
+        )
+        VALUES
+        (
+          #{commentCounts},
+          #{createDate},
+          #{summary},
+          #{title},
+          #{viewCounts},
+          #{weight},
+          #{authorId},
+          #{allowComment},
+          #{bodyId},
+          #{categoryId},
+          #{status}
+        )
+    </insert>
+    <!--循环插入标签id-->
+    <insert id="saveTags">
+        INSERT INTO anhao_tag_article
+        (
+          `article_id`,
+          `tag_id`
+        )
+        VALUES
+        <foreach collection="tagsList" item="tagX" separator=",">
+            (
+              #{articleId},
+              #{tagX}
+            )
+        </foreach>
+    </insert>
+
+    <!--更新文章的主体内容-->
+    <update id="updateArticleBody" parameterType="com.blog.model.ArticleBody">
+        UPDATE anhao_article_body
+        <set>
+            <if test="content != null">`content` = #{content},</if>
+            <if test="contentHtml != null">`content_html` = #{contentHtml}</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!--更新文章数据-->
+    <update id="updateArticle" parameterType="com.blog.model.Article">
+        UPDATE anhao_article
+        <set>
+            <if test="createDate != null">`create_date` = #{createDate},</if>
+            <if test="summary != null">`summary` = #{summary},</if>
+            <if test="title != null">`title` = #{title},</if>
+            <if test="authorId != null">`author_id` = #{authorId},</if>
+            <if test="allowComment != null">`allow_comment` = #{allowComment},</if>
+            <if test="categoryId != null">`category_id` = #{categoryId},</if>
+            <if test="status != null">`status` = #{status}</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!--更新标签数据,先删除，再进行插入-->
+    <delete id="deleteTags">
+        DELETE FROM anhao_tag_article
+        WHERE article_id = #{articleId}
+    </delete>
+
+
+    <!--删除文章主体-->
+    <delete id="deleteArticleBody">
+        DELETE FROM anhao_article_body
+        WHERE id = #{articleId}
+    </delete>
+
+    <!--删除文章信息-->
+    <delete id="deleteArticle">
+        DELETE FROM anhao_article
+        WHERE id = #{articleId}
+    </delete>
+
+    <!--归档查询文章，按时间倒序排列-->
+    <select id="archivingFind" resultMap="ArchivingArticle">
+        SELECT DISTINCT t1.id a_id, t1.title a_title, t1.create_date a_create_date, DATE_FORMAT(t1.create_date, "%Y") artYear FROM anhao_article t1
+        WHERE t1.status = 1
+        ORDER BY t1.create_date DESC
+    </select>
+</mapper>

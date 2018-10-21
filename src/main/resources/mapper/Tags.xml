@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.blog.dao.TagsDao">
+
+    <select id="queryList" resultType="com.blog.model.Tags">
+        SELECT * FROM anhao_tags
+    </select>
+
+    <select id="queryObject" resultType="com.blog.model.Tags">
+        SELECT * FROM anhao_tags as t
+        WHERE t.id = #{id}
+    </select>
+
+    <insert id="save" parameterType="com.blog.model.Tags">
+        INSERT INTO anhao_tags
+        (
+          `tagname`
+        )
+        VALUES
+        (
+          #{tagName}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.blog.model.Tags">
+        UPDATE anhao_tags
+        <set>
+            <if test="tagName != null">`tagname` = #{tagName},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM anhao_tags WHERE id = #{id}
+    </delete>
+
+    <select id="queryByArticle" resultType="com.blog.model.Tags">
+        SELECT t1.* FROM anhao_tags t1,anhao_tag_article t2
+        WHERE t2.article_id = #{id} AND t2.tag_id = t1.id
+    </select>
+
+</mapper>
